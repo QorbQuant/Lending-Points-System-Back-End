@@ -1,6 +1,8 @@
 # This is a sample Python script.
 from dotenv import load_dotenv
 import os
+from contracts import CONTRACT_ADDRESSES
+
 
 # Press ⌃R to execute it or replace it with your code.
 # Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
@@ -21,3 +23,5 @@ if __name__ == '__main__':
 load_dotenv()  # Loads the environment variables from .env file
 
 api_key = os.getenv('MY_API_KEY')
+
+address = CONTRACT_ADDRESSES["contract_name_1"]
