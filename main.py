@@ -1,6 +1,6 @@
-# This is a sample Python script.
 from dotenv import load_dotenv
 import os
+import psycopg2
 from contracts import CONTRACT_ADDRESSES
 import pandas as pd
 import requests
@@ -9,6 +9,8 @@ import requests
 load_dotenv()  # Loads the environment variables from .env file
 api_key = os.getenv('LINEA_API_KEY')
 address = CONTRACT_ADDRESSES["deposit_contract"]
+db_conn_str = os.getenv('db_conn_str')  # Assuming you have your database URL in the .env file
+
 
 def fetch_transactions(address, api_key):
     base_url = "https://api.lineascan.build/api"
@@ -42,14 +44,30 @@ def fetch_transactions(address, api_key):
     return transactions
 
 
+def insert_transactions_to_db(grouped_data_sorted, db_conn_str):
+    # Connect to your database
+    conn = psycopg2.connect(db_conn_str)
+    cur = conn.cursor()
+
+    # Assuming you have a table created like this:
+    # CREATE TABLE transaction_counts (address VARCHAR(255), hash_count INT, points INT);
+
+    for _, row in grouped_data_sorted.iterrows():
+        cur.execute(
+            "INSERT INTO transaction_counts (address, hash_count, points) VALUES (%s, %s, %s)",
+            (row['from'], row['hash_count'], row['points'])
+        )
+
+    conn.commit()  # Commit the transaction
+    cur.close()
+    conn.close()
+
+
 all_transactions = fetch_transactions(address, api_key)
 
 if all_transactions:
     # Convert to DataFrame and process
     df = pd.DataFrame(all_transactions)
-    if 'timeStamp' in df.columns:
-        df['timeStamp'] = pd.to_datetime(df['timeStamp'], unit='s')
-        df = df.sort_values(by='timeStamp', ascending=False)
 
     # Group, sort, and calculate points
     grouped_data = df.groupby('from')['hash'].count().reset_index(name='hash_count')
@@ -57,10 +75,9 @@ if all_transactions:
     grouped_data_sorted['points'] = grouped_data_sorted['hash_count'] * 10
 
     # Display the final DataFrame
-    print(grouped_data_sorted)
+    insert_transactions_to_db(grouped_data_sorted, db_conn_str)
 else:
     print("No transactions found.")
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print(grouped_data_sorted)
+# if __name__ == '__main__':
+#     print(grouped_data_sorted)
