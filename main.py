@@ -79,6 +79,7 @@ def insert_transactions_to_db(grouped_data_sorted, db_conn_str):
 def run_hourly_task():
     """ process data and insert into db every hour """
 
+    print("Started service")
     while True:
         all_transactions = fetch_transactions(address, api_key)
 
