@@ -88,6 +88,10 @@ def process_data(transactions):
 
     return grouped_data_sorted
 
+
+def process_data_json(transactions):
+    return process_data(transactions).to_records()
+
 def run_hourly_task():
     """ process data and insert into db every hour """
 
