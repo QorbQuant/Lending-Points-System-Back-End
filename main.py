@@ -4,6 +4,7 @@ import psycopg2
 from contracts import CONTRACT_ADDRESSES
 import pandas as pd
 import requests
+import time
 
 load_dotenv()
 api_key = os.getenv('LINEA_API_KEY')
@@ -75,21 +76,32 @@ def insert_transactions_to_db(grouped_data_sorted, db_conn_str):
     conn.close()
 
 
-all_transactions = fetch_transactions(address, api_key)
+def run_hourly_task():
+    """ process data and insert into db every hour """
 
-if all_transactions:
-    # Convert to DataFrame and process
-    df = pd.DataFrame(all_transactions)
+    while True:
+        all_transactions = fetch_transactions(address, api_key)
 
-    # Group, sort, and calculate points
-    grouped_data = df.groupby('from')['hash'].count().reset_index(name='hash_count')
-    grouped_data_sorted = grouped_data.sort_values(by='hash_count', ascending=False)
-    grouped_data_sorted['points'] = grouped_data_sorted['hash_count'] * 10
+        if all_transactions:
+            # Convert to DataFrame and process
+            df = pd.DataFrame(all_transactions)
 
-    # Display the final DataFrame
-    insert_transactions_to_db(grouped_data_sorted, db_conn_str)
-    print("transactions inserted into db")
-else:
-    print("No transactions found.")
+            # Group, sort, and calculate points
+            grouped_data = df.groupby('from')['hash'].count().reset_index(name='hash_count')
+            grouped_data_sorted = grouped_data.sort_values(by='hash_count', ascending=False)
+            grouped_data_sorted['points'] = grouped_data_sorted['hash_count'] * 10
+
+            # Insert into the database
+            insert_transactions_to_db(grouped_data_sorted, db_conn_str)
+            print("transactions inserted into db")
+        else:
+            print("No transactions found.")
+
+        print("Task completed, waiting for one hour.")
+        time.sleep(3600)  # Sleep for one hour
+
+
+if __name__ == '__main__':
+    run_hourly_task()
 
 
