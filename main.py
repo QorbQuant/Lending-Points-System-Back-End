@@ -76,6 +76,18 @@ def insert_transactions_to_db(grouped_data_sorted, db_conn_str):
     conn.close()
 
 
+def process_data(transactions):
+    """Process transactions and return grouped and sorted data with points."""
+
+    df = pd.DataFrame(transactions)
+
+    # Group, sort, and calculate points
+    grouped_data = df.groupby('from')['hash'].count().reset_index(name='hash_count')
+    grouped_data_sorted = grouped_data.sort_values(by='hash_count', ascending=False)
+    grouped_data_sorted['points'] = grouped_data_sorted['hash_count'] * 10
+
+    return grouped_data_sorted
+
 def run_hourly_task():
     """ process data and insert into db every hour """
 
